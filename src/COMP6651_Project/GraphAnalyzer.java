@@ -8,7 +8,11 @@ import java.util.*;
 public class GraphAnalyzer {
     static class Vertex {
         int id;
+
+        double x;
+        double y;
         List<Vertex> neighbors = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
         boolean visited = false;
         double distance = Double.MAX_VALUE;
         Vertex predecessor = null;
@@ -18,7 +22,13 @@ public class GraphAnalyzer {
         }
 
         void addNeighbor(Vertex neighbor) {
+
             this.neighbors.add(neighbor);
+            this.distances.add(1.0);
+        }
+        void addNeighbor(Vertex neighbor, double distance){
+            this.neighbors.add(neighbor);
+            this.distances.add(distance);
         }
     }
 
@@ -38,20 +48,40 @@ public class GraphAnalyzer {
     private void readGraphFromCSV(String filename) throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(filename));
 
-        // Parse the first line for the number of vertices; 
-        String[] firstLineTokens = lines.get(0).split(" ");
-        int numVertices = Integer.parseInt(firstLineTokens[0]); // Number of vertices
+        // Parse the first line for the number of vertices;
+        int lineCount = 0;
+        String[] firstLineTokens = lines.get(lineCount).split(" ");
+        while(firstLineTokens[0].contains("%")){
+            lineCount++;
+             firstLineTokens = lines.get(lineCount).split(" ");
+        }
+        int numVertices = Integer.parseInt(firstLineTokens[1]); // Number of vertices USE index 1, middle value is vertices for MTX and EDGE files.
         for (int i = 0; i < numVertices; i++) {
             vertices.add(new Vertex(i)); // Initialize vertices
         }
 
         // Parse subsequent lines for edges
-        for (int i = 1; i < lines.size(); i++) {
+        for (int i = lineCount+1; i < lines.size(); i++) {
             String[] tokens = lines.get(i).split(" ");
-            int from = Integer.parseInt(tokens[0]) - 1; // Adjust for 0-based indexing
-            int to = Integer.parseInt(tokens[1]) - 1; // Adjust for 0-based indexing
-            vertices.get(from).addNeighbor(vertices.get(to));
-            vertices.get(to).addNeighbor(vertices.get(from)); // Assuming undirected graph
+            int to;
+            int from;
+            if(tokens.length == 2){
+            from = Integer.parseInt(tokens[0]) - 1; // Adjust for 0-based indexing
+             to = Integer.parseInt(tokens[1]) - 1; // Adjust for 0-based indexing
+                vertices.get(from).addNeighbor(vertices.get(to));
+                vertices.get(to).addNeighbor(vertices.get(from)); // Assuming undirected graph
+            }
+            if(tokens.length == 6){
+                from = Integer.parseInt(tokens[0]) - 1; // Adjust for 0-based indexing
+                to = Integer.parseInt(tokens[3]) - 1; // Adjust for 0-based indexing
+                vertices.get(from).x = Double.parseDouble(tokens[1]);
+                vertices.get(from).y = Double.parseDouble(tokens[2]);
+                vertices.get(to).x = Double.parseDouble(tokens[4]);
+                vertices.get(to).y = Double.parseDouble(tokens[5]);
+                double distance = Math.sqrt(Math.pow(vertices.get(from).x - vertices.get(to).x, 2) + Math.pow(vertices.get(from).y - vertices.get(to).y, 2));
+                vertices.get(from).addNeighbor(vertices.get(to), Double.parseDouble(tokens[2]));
+                vertices.get(to).addNeighbor(vertices.get(from), Double.parseDouble(tokens[2]));
+            }
         }
     }
 
@@ -178,18 +208,25 @@ public class GraphAnalyzer {
     
     
     private double getDistance(Vertex u, Vertex v) {
-        return 1.0; // All edges have a distance of 1 in an unweighted graph
+        return u.distances.get(u.neighbors.indexOf(v));
     }
 
       
     // Δ(LCC) and detailed Lmax calculations require specific implementations based on graph analysis.
 
+    public void generateGeometricGraph(int n, double r){
+
+    }
+
+
     public static void main(String[] args) {
         try {
             //GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
-            GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-
+            //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
+            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
             System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
             // DFS
             // Perform DFS to calculate LmaxDFS and other metrics
