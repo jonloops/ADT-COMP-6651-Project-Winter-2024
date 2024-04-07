@@ -8,6 +8,10 @@ import java.util.*;
 public class GraphAnalyzer {
     static class Vertex {
         int id;
+        double distanceToDestination = 0.0;
+        double highestCostToNode = 0.0;
+
+        List<Vertex> currentPathToNode = new ArrayList<>();
 
         double x;
         double y;
@@ -166,14 +170,14 @@ public class GraphAnalyzer {
         int overallMaxDegree = 0; // To track the maximum across all traversals
         
         for (Vertex start : lcc) {
-            int localMaxDegree = dijkstraCalculateDegree(start); // Get max degree from each run
+            int localMaxDegree = dijkstraCalculateDegree(start, false); // Get max degree from each run
             overallMaxDegree = Math.max(overallMaxDegree, localMaxDegree); 
         }
         
         return overallMaxDegree; 
     }
 
-    private int dijkstraCalculateDegree(Vertex start) {  // Return maxDegree
+    private int dijkstraCalculateDegree(Vertex start, boolean useHeuristics) {  // Return maxDegree
         // Standard Dijkstra's implementation
         start.distance = 0;
         PriorityQueue<Vertex> pq = new PriorityQueue<>(Comparator.comparingDouble(v -> v.distance));
@@ -184,7 +188,13 @@ public class GraphAnalyzer {
             // Note: Mark `u` as visited if needed for your Δ(LCC) calculation
             
             for (Vertex v : u.neighbors) {
-                double weight = getDistance(u, v); 
+                double weight;
+
+                if(useHeuristics) {
+                    weight = getDistance(u, v);
+                }else{
+                    weight = 1.0;
+                }
                 if (v.distance > u.distance + weight) {
                     v.distance = u.distance + weight;
                     v.predecessor = u;
@@ -208,14 +218,74 @@ public class GraphAnalyzer {
     
     
     private double getDistance(Vertex u, Vertex v) {
-        return u.distances.get(u.neighbors.indexOf(v));
+        return Math.sqrt(Math.pow(u.x - v.x, 2) + Math.pow(u.y - v.y, 2));
     }
 
       
     // Δ(LCC) and detailed Lmax calculations require specific implementations based on graph analysis.
 
-    public void generateGeometricGraph(int n, double r){
+    //Does not work if x,y is not implemented into vertices.
+    public double AStarFindLMax(){
 
+        List<Vertex> LCC = getLargestComponent();
+
+        //A* needs a start and destination node, will find the furthest two nodes heuristically to decide on the nodes to use;
+        Vertex start = null;
+        Vertex end = null;
+        double maxDistance = -1.0;
+        for(int i = 0; i < LCC.size(); i++){
+            for(int j = i+1; j < LCC.size(); j++){
+                if(getDistance(LCC.get(i), LCC.get(j)) > maxDistance){
+                    maxDistance = getDistance(LCC.get(i), LCC.get(j));
+                    start = LCC.get(i);
+                    end = LCC.get(j);
+                };
+            }
+        }
+
+        for(Vertex v : LCC){
+            v.distanceToDestination = getDistance(v,end);
+        }
+        List<Vertex> S = new ArrayList<Vertex>();
+        Queue<Vertex> Q = new PriorityQueue<>(new Comparator<Vertex>() {
+            @Override
+            public int compare(Vertex o1, Vertex o2) {
+                if (o1.distanceToDestination+o1.highestCostToNode > o2.distanceToDestination+o2.highestCostToNode){
+                    return -1;
+                };
+
+                if(o1.distanceToDestination+o1.distanceToDestination < o2.distanceToDestination+o2.highestCostToNode) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+
+        for(Vertex v : LCC){
+            Q.add(v);
+        }
+
+        while(!Q.isEmpty()){
+            Vertex u = Q.poll();
+            S.add(u);
+            for(Vertex v : u.neighbors){
+                if(v.highestCostToNode < u.highestCostToNode + getDistance(u, v)){
+                    if(v.currentPathToNode.contains(u)) break;
+                    v.currentPathToNode = new ArrayList<>(u.currentPathToNode);
+                    v.currentPathToNode.add(u);
+                    v.highestCostToNode = u.highestCostToNode + getDistance(u, v);
+                    if(S.contains(v)){
+                        S.remove(v);
+                        Q.add(v);
+                    }else{
+                        Q.remove(v);
+                        Q.add(v);
+                    }
+                }
+            }
+        }
+
+        return end.currentPathToNode.size();
     }
 
 
@@ -224,9 +294,9 @@ public class GraphAnalyzer {
             //GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
-            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
             System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
             // DFS
             // Perform DFS to calculate LmaxDFS and other metrics
@@ -236,10 +306,14 @@ public class GraphAnalyzer {
             // Perform Dijkstra to calculate LmaxDijkstra and other metrics
             System.out.println("Dijkstra\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC_Dijkstra() + "\t" + 
                                analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxDijkstra);
+
+            analyzer.LmaxAStar = analyzer.AStarFindLMax();
             // A*
             // Perform A* to calculate LmaxAStar and other metrics
             System.out.println("A*\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC() + "\t" + 
                                analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxAStar);
+
+
         } catch (IOException e) {
             System.err.println("Error reading the graph file: " + e.getMessage());
         }
