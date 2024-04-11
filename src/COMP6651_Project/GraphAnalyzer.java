@@ -41,8 +41,9 @@ public class GraphAnalyzer {
     private double LmaxDFS = 0;
     private double LmaxDijkstra = 0;
     private double LmaxAStar = 0;
-    private static final double SCALING_FACTOR = 1000; // Adjust as needed
-
+    private int maxDegreeInLSP_DFS = 0;
+    private int maxDegreeInLSP_Dijkstra = 0;
+    
     public GraphAnalyzer(String filename) throws IOException {
         vertices = new ArrayList<>();
         readGraphFromCSV(filename);
@@ -82,7 +83,6 @@ public class GraphAnalyzer {
                 vertices.get(from).y = Double.parseDouble(tokens[2]);
                 vertices.get(to).x = Double.parseDouble(tokens[4]);
                 vertices.get(to).y = Double.parseDouble(tokens[5]);
-                double distance = Math.sqrt(Math.pow(vertices.get(from).x - vertices.get(to).x, 2) + Math.pow(vertices.get(from).y - vertices.get(to).y, 2));
                 vertices.get(from).addNeighbor(vertices.get(to), Double.parseDouble(tokens[2]));
                 vertices.get(to).addNeighbor(vertices.get(from), Double.parseDouble(tokens[2]));
             }
@@ -111,133 +111,131 @@ public class GraphAnalyzer {
     }
 
     private List<Vertex> getLargestComponent() {
-        return allComponents.stream().max(Comparator.comparingInt(List::size)).orElse(new ArrayList<>());
+        List<Vertex> lcc = allComponents.stream().max(Comparator.comparingInt(List::size)).orElse(new ArrayList<>());
+        return lcc;
     }
-
-    private int calculateDeltaLCC() {
-    	   List<Vertex> lcc = getLargestComponent();
-    	   int maxDegree = 0;
-    	   for (Vertex v : lcc) {
-    	       maxDegree = Math.max(maxDegree, v.neighbors.size()); 
-    	   }
-    	   return maxDegree;
-    	}
     
-    private int calculateVLCC() {
-        return getLargestComponent().size();
-    }
+    private int calculateDeltaLCC() {
+ 	   List<Vertex> lcc = getLargestComponent();
+ 	   int maxDegree = 0;
+ 	   for (Vertex v : lcc) {
+ 	       maxDegree = Math.max(maxDegree, v.neighbors.size()); 
+ 	   }
+ 	   return maxDegree;
+ 	}
+ 
+	 private int calculateVLCC() {
+	     return getLargestComponent().size();
+	 }
+	
+	 private double calculateAverageDegreeLCC() {
+	     List<Vertex> lcc = getLargestComponent();
+	     return lcc.stream().mapToInt(v -> v.neighbors.size()).average().orElse(0);
+	 }
 
-    private double calculateAverageDegreeLCC() {
-        List<Vertex> lcc = getLargestComponent();
-        return lcc.stream().mapToInt(v -> v.neighbors.size()).average().orElse(0);
-    }
-
-    private int calculateDeltaLCC_DFS() {
-        List<Vertex> lcc = getLargestComponent(); 
-        int maxDegree = 0; 
-        LmaxDFS = 0; 
-
-        for (Vertex v : lcc) {
-            if (!v.visited) { 
-                dfsCalculateDegree(v, maxDegree); 
-                maxDegree = Math.max(maxDegree, v.neighbors.size()); // Update after each DFS traversal
-            }
+    private void dfsCalculateDegree(Vertex v, int depth, Set<Vertex> visited) {
+        // Add the current vertex to the visited set at the beginning of the method
+        if (!visited.add(v)) {
+            // If adding v returns false, it means v was already in the set and thus already visited on this path
+            return; // Skip this vertex to avoid loops
         }
-        return maxDegree;
-    }
 
-    private void dfsCalculateDegree(Vertex v, int pathLength) { 
-        v.visited = true;
-        v.distance = 0 / SCALING_FACTOR; 
+        // Update maxDegreeInLSP_DFS and LmaxDFS based on the current vertex
+        maxDegreeInLSP_DFS = Math.max(maxDegreeInLSP_DFS, v.neighbors.size());
+        LmaxDFS = Math.max(LmaxDFS, depth); 
 
+
+
+        // Recursively visit neighbors
         for (Vertex neighbor : v.neighbors) {
-            if (!neighbor.visited) {
-                dfsCalculateDegree(neighbor, pathLength + 1); 
-            }
+            dfsCalculateDegree(neighbor, depth + 1, visited); // Pass the same visited set to the recursive call
         }
-
-        LmaxDFS = Math.max(LmaxDFS, pathLength); // Update after each DFS traversal
+    }
+    
+    public void runDFSForDeltaLCC() {
+        List<Vertex> lcc = getLargestComponent();
+        maxDegreeInLSP_DFS = 0; 
+        LmaxDFS = 0;
+        for (Vertex vertex : vertices) {
+            vertex.visited = false; // Reset visited for all vertices
+        }
+        for (Vertex vertex : lcc) {
+            Set<Vertex> visited = new HashSet<>(); // Initialize the visited set for this starting vertex
+            dfsCalculateDegree(vertex, 1, visited); // Start depth from 1
+        }
     }
 
-    private int calculateDeltaLCC_Dijkstra() {
-        List<Vertex> lcc = getLargestComponent(); 
-        
-        for (Vertex v : lcc) {
-            v.distance = Double.MAX_VALUE;
-        }
-        
-        LmaxDijkstra = 0; // Initialize LmaxDijkstra once 
-        int overallMaxDegree = 0; // To track the maximum across all traversals
-        
-        for (Vertex start : lcc) {
-            int localMaxDegree = dijkstraCalculateDegree(start, false); // Get max degree from each run
-            overallMaxDegree = Math.max(overallMaxDegree, localMaxDegree); 
-        }
-        
-        return overallMaxDegree; 
-    }
-
-    private int dijkstraCalculateDegree(Vertex start, boolean useHeuristics) {  // Return maxDegree
-        // Standard Dijkstra's implementation
-        start.distance = 0;
+    private void dijkstraCalculateDegree(Vertex start, List<Vertex> lcc) {
         PriorityQueue<Vertex> pq = new PriorityQueue<>(Comparator.comparingDouble(v -> v.distance));
+        start.distance = 0;
         pq.offer(start);
-        while (!pq.isEmpty()) {
-            Vertex u = pq.poll(); 
 
-            // Note: Mark `u` as visited if needed for your Δ(LCC) calculation
+        while (!pq.isEmpty()) {
+            Vertex u = pq.poll();
             
             for (Vertex v : u.neighbors) {
-                double weight;
-
-                if(useHeuristics) {
-                    weight = getDistance(u, v);
-                }else{
-                    weight = 1.0;
-                }
-                if (v.distance > u.distance + weight) {
-                    v.distance = u.distance + weight;
-                    v.predecessor = u;
-                    pq.offer(v); 
-
-                    // Update LmaxDijkstra conditionally
-                    if (v.distance > LmaxDijkstra) { 
-                        LmaxDijkstra = v.distance; 
-                    }
-                }
+                if (!lcc.contains(v) || v.distance <= u.distance + 1) continue;
+                
+                double weight = 1.0; // Assuming unity weight for simplicity
+                v.distance = u.distance + weight;
+                pq.offer(v);
             }
         }
-        
-        int maxDegree = 0; // Initialize maxDegree at the start of each traversal
-        int localMaxDegree = 0; 
-        for (Vertex neighbor : start.neighbors) {
-               localMaxDegree = Math.max(localMaxDegree, neighbor.neighbors.size());  
-        }
-        return localMaxDegree; 
     }
     
-    
+    public void runAlgorithmsAndCalculateMetrics() {
+      runDFSForDeltaLCC();
+      runDijkstraForDeltaLCC();
+  }
+      
+    public void runDijkstraForDeltaLCC() {
+      List<Vertex> lcc = getLargestComponent();
+      maxDegreeInLSP_Dijkstra = 0;
+      LmaxDijkstra = 0; // Ensure this is reset only once before all runs
+
+      // Loop through each vertex in the LCC as the starting point for Dijkstra's algorithm
+      for (Vertex startVertex : lcc) {
+          // Reset distances for all vertices before each run
+          for (Vertex vertex : vertices) {
+              vertex.distance = Double.MAX_VALUE;
+              vertex.predecessor = null;
+          }
+          
+          // Run Dijkstra from the current start vertex
+          dijkstraCalculateDegree(startVertex, lcc);
+
+          // After the run, check all vertices to find the maximum distance observed in this run
+          double maxDistanceThisRun = lcc.stream()
+                                          .filter(v -> v.distance != Double.MAX_VALUE)
+                                          .mapToDouble(v -> v.distance)
+                                          .max()
+                                          .orElse(0);
+          // Update LmaxDijkstra if the maximum distance found in this run exceeds the current LmaxDijkstra
+          LmaxDijkstra = Math.max(LmaxDijkstra, maxDistanceThisRun);
+      }
+
+      // Max degree can be calculated once after all runs since it doesn't depend on the start vertex
+      maxDegreeInLSP_Dijkstra = lcc.stream()
+                                   .mapToInt(v -> v.neighbors.size())
+                                   .max()
+                                   .orElse(0);
+      
+ 	}
+  
     private double getDistance(Vertex u, Vertex v) {
         return Math.sqrt(Math.pow(u.x - v.x, 2) + Math.pow(u.y - v.y, 2));
     }
 
-      
-    // Δ(LCC) and detailed Lmax calculations require specific implementations based on graph analysis.
-
-    //Does not work if x,y is not implemented into vertices.
     public double AStarFindLMax(){
 
         List<Vertex> LCC = getLargestComponent();
 
-        //A* needs a start and destination node, will find the furthest two nodes heuristically to decide on the nodes to use;
-        Vertex start = null;
         Vertex end = null;
         double maxDistance = -1.0;
         for(int i = 0; i < LCC.size(); i++){
             for(int j = i+1; j < LCC.size(); j++){
                 if(getDistance(LCC.get(i), LCC.get(j)) > maxDistance){
                     maxDistance = getDistance(LCC.get(i), LCC.get(j));
-                    start = LCC.get(i);
                     end = LCC.get(j);
                 };
             }
@@ -291,20 +289,26 @@ public class GraphAnalyzer {
 
     public static void main(String[] args) {
         try {
-            //GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
+        	//GraphAnalyzer analyzer = new GraphAnalyzer("test.mtx");
+        	//GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-            GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            
+            analyzer.runAlgorithmsAndCalculateMetrics();
+            
             System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+            
             // DFS
             // Perform DFS to calculate LmaxDFS and other metrics
-            System.out.println("DFS\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC_DFS() + "\t" + 
+            System.out.println("DFS\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.maxDegreeInLSP_DFS + "\t" + 
                                analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxDFS);
+            
             // Dijkstra
             // Perform Dijkstra to calculate LmaxDijkstra and other metrics
-            System.out.println("Dijkstra\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC_Dijkstra() + "\t" + 
+            System.out.println("Dijkstra\t" + analyzer.calculateVLCC() + "\t" + analyzer.maxDegreeInLSP_Dijkstra + "\t" + 
                                analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxDijkstra);
 
             analyzer.LmaxAStar = analyzer.AStarFindLMax();
