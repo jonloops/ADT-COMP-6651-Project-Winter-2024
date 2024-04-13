@@ -10,9 +10,8 @@ public class GraphAnalyzer {
         int id;
         double distanceToDestination = 0.0;
         double highestCostToNode = 0.0;
-
         List<Vertex> currentPathToNode = new ArrayList<>();
-
+        int degree = 0;
         double x;
         double y;
         List<Vertex> neighbors = new ArrayList<>();
@@ -41,9 +40,9 @@ public class GraphAnalyzer {
     private double LmaxDFS = 0;
     private double LmaxDijkstra = 0;
     private double LmaxAStar = 0;
+    private double LmaxBeamSearch = 0;
     private int maxDegreeInLSP_DFS = 0;
     private int maxDegreeInLSP_Dijkstra = 0;
-    
     public GraphAnalyzer(String filename) throws IOException {
         vertices = new ArrayList<>();
         readGraphFromCSV(filename);
@@ -286,16 +285,83 @@ public class GraphAnalyzer {
         return end.currentPathToNode.size();
     }
 
+    public double BeamSearchFindLMax(int initialBeamWidth, double beamWidthIncrement) {
+        List<Vertex> LCC = getLargestComponent();
+
+        // Find the end vertex (destination)
+        Vertex end = null;
+        double maxDistance = -1.0;
+        for (int i = 0; i < LCC.size(); i++) {
+            for (int j = i + 1; j < LCC.size(); j++) {
+                double distance = getDistance(LCC.get(i), LCC.get(j));
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                    end = LCC.get(j);
+                }
+            }
+        }
+
+        // Initialize beam search with vertices with highest distance to destination
+        int beamWidth = initialBeamWidth;
+        Set<Vertex> visited = new HashSet<>();
+        Queue<Vertex> queue = new PriorityQueue<>(Comparator.comparingDouble((Vertex o) ->
+                o.highestCostToNode + o.distanceToDestination).reversed());
+
+        for (int i = 0; i < beamWidth && i < LCC.size(); i++) {
+            Vertex startVertex = LCC.get(i);
+            startVertex.highestCostToNode = 0.0; // Start vertex has cost 0
+            startVertex.currentPathToNode = new ArrayList<>(); // Initialize path
+            startVertex.distanceToDestination = getDistance(startVertex, end); // Heuristic
+            queue.add(startVertex);
+        }
+
+        double maxPathLength = 0.0;
+        while (!queue.isEmpty()) {
+            Vertex currentVertex = queue.poll();
+            visited.add(currentVertex);
+
+            if (currentVertex.currentPathToNode.size() > maxPathLength) {
+                maxPathLength = currentVertex.currentPathToNode.size();
+            }
+
+            // Explore neighbors of current vertex
+            for (Vertex neighbor : currentVertex.neighbors) {
+                if (!visited.contains(neighbor) && !currentVertex.currentPathToNode.contains(neighbor)) {
+                    neighbor.currentPathToNode = new ArrayList<>(currentVertex.currentPathToNode);
+                    neighbor.currentPathToNode.add(currentVertex);
+                    neighbor.highestCostToNode = currentVertex.highestCostToNode + 1; // Increment cost
+                    neighbor.distanceToDestination = getDistance(neighbor, end); // Update heuristic
+                    queue.add(neighbor);
+                }
+            }
+
+            // Increase beam width dynamically
+            if (queue.isEmpty()) {
+                beamWidth += beamWidthIncrement;
+                for (int i = 0; i < beamWidth && i < LCC.size(); i++) {
+                    Vertex startVertex = LCC.get(i);
+                    if (!visited.contains(startVertex)) {
+                        startVertex.highestCostToNode = 0.0; // Start vertex has cost 0
+                        startVertex.currentPathToNode = new ArrayList<>(); // Initialize path
+                        startVertex.distanceToDestination = getDistance(startVertex, end); // Heuristic
+                        queue.add(startVertex);
+                    }
+                }
+            }
+        }
+
+        return maxPathLength;
+    }
 
     public static void main(String[] args) {
         try {
-        	//GraphAnalyzer analyzer = new GraphAnalyzer("test.mtx");
+        	//GraphAnalyzer analyzer = new GraphAnalyzer("n50r0.057.edges");
         	//GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
-            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
             
             analyzer.runAlgorithmsAndCalculateMetrics();
             
@@ -316,6 +382,12 @@ public class GraphAnalyzer {
             // Perform A* to calculate LmaxAStar and other metrics
             System.out.println("A*\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC() + "\t" + 
                                analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxAStar);
+
+            analyzer.LmaxBeamSearch = analyzer.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC() + "\t" +
+                    analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxBeamSearch);
 
 
         } catch (IOException e) {
