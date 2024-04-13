@@ -355,13 +355,13 @@ public class GraphAnalyzer {
 
     public static void main(String[] args) {
         try {
-        	//GraphAnalyzer analyzer = new GraphAnalyzer("n50r0.057.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("test.mtx");
         	//GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-            GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
             //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
             
             analyzer.runAlgorithmsAndCalculateMetrics();
             
