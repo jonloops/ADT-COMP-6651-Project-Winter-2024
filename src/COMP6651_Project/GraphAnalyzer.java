@@ -355,41 +355,201 @@ public class GraphAnalyzer {
 
     public static void main(String[] args) {
         try {
-            //GraphAnalyzer analyzer = new GraphAnalyzer("test.mtx");
-        	//GraphAnalyzer analyzer = new GraphAnalyzer("DSJC500-5.mtx");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("inf-euroroad.edges");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("inf-power.mtx");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n300r0point08VLCC284.edges");
-            //GraphAnalyzer analyzer = new GraphAnalyzer("n400r0point064VLCC324.edges");
-            GraphAnalyzer analyzer = new GraphAnalyzer("n500r0point057VLCC400.edges");
-            
-            analyzer.runAlgorithmsAndCalculateMetrics();
+            System.out.println("Test Graph:");
+            GraphAnalyzer testanalyzer = new GraphAnalyzer("test.edges");
+
+            testanalyzer.runAlgorithmsAndCalculateMetrics();
+
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + testanalyzer.calculateVLCC() + "\t" + testanalyzer.maxDegreeInLSP_DFS + "\t" +
+                    testanalyzer.calculateAverageDegreeLCC() + "\t" + testanalyzer.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + testanalyzer.calculateVLCC() + "\t" + testanalyzer.maxDegreeInLSP_Dijkstra + "\t" +
+                    testanalyzer.calculateAverageDegreeLCC() + "\t" + testanalyzer.LmaxDijkstra);
+
+            testanalyzer.LmaxAStar = testanalyzer.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + testanalyzer.calculateVLCC() + "\t" + testanalyzer.calculateDeltaLCC() + "\t" +
+                    testanalyzer.calculateAverageDegreeLCC() + "\t" + testanalyzer.LmaxAStar);
+
+            testanalyzer.LmaxBeamSearch = testanalyzer.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + testanalyzer.calculateVLCC() + "\t" + testanalyzer.calculateDeltaLCC() + "\t" +
+                    testanalyzer.calculateAverageDegreeLCC() + "\t" + testanalyzer.LmaxBeamSearch);
+
+
+
+
+            GraphAnalyzer analyzer1 = new GraphAnalyzer("DSJC500-5.mtx");
+            GraphAnalyzer analyzer2 = new GraphAnalyzer("inf-euroroad.edges");
+            GraphAnalyzer analyzer3 = new GraphAnalyzer("inf-power.mtx");
+            GraphAnalyzer analyzer4 = new GraphAnalyzer("n300r0point08VLCC284.edges");
+            GraphAnalyzer analyzer5 = new GraphAnalyzer("n400r0point064VLCC324.edges");
+            GraphAnalyzer analyzer6 = new GraphAnalyzer("n500r0point057VLCC400.edges");
+            System.out.println("DSJC Graph:");
+            analyzer1.runAlgorithmsAndCalculateMetrics();
             
             System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
             
             // DFS
             // Perform DFS to calculate LmaxDFS and other metrics
-            System.out.println("DFS\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.maxDegreeInLSP_DFS + "\t" + 
-                               analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxDFS);
+            System.out.println("DFS\t\t" + analyzer1.calculateVLCC() + "\t" + analyzer1.maxDegreeInLSP_DFS + "\t" +
+                               analyzer1.calculateAverageDegreeLCC() + "\t" + analyzer1.LmaxDFS);
             
             // Dijkstra
             // Perform Dijkstra to calculate LmaxDijkstra and other metrics
-            System.out.println("Dijkstra\t" + analyzer.calculateVLCC() + "\t" + analyzer.maxDegreeInLSP_Dijkstra + "\t" + 
-                               analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxDijkstra);
+            System.out.println("Dijkstra\t" + analyzer1.calculateVLCC() + "\t" + analyzer1.maxDegreeInLSP_Dijkstra + "\t" +
+                               analyzer1.calculateAverageDegreeLCC() + "\t" + analyzer1.LmaxDijkstra);
 
-            analyzer.LmaxAStar = analyzer.AStarFindLMax();
+            analyzer1.LmaxAStar = analyzer1.AStarFindLMax();
             // A*
             // Perform A* to calculate LmaxAStar and other metrics
-            System.out.println("A*\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC() + "\t" + 
-                               analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxAStar);
+            System.out.println("A*\t\t" + analyzer1.calculateVLCC() + "\t" + analyzer1.calculateDeltaLCC() + "\t" +
+                               analyzer1.calculateAverageDegreeLCC() + "\t" + analyzer1.LmaxAStar);
 
-            analyzer.LmaxBeamSearch = analyzer.BeamSearchFindLMax(5,5);
+            analyzer1.LmaxBeamSearch = analyzer1.BeamSearchFindLMax(5,5);
             //Anytime A*
             //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
-            System.out.println("BeamSearchAStar\t\t" + analyzer.calculateVLCC() + "\t" + analyzer.calculateDeltaLCC() + "\t" +
-                    analyzer.calculateAverageDegreeLCC() + "\t" + analyzer.LmaxBeamSearch);
+            System.out.println("BeamSearchAStar\t\t" + analyzer1.calculateVLCC() + "\t" + analyzer1.calculateDeltaLCC() + "\t" +
+                    analyzer1.calculateAverageDegreeLCC() + "\t" + analyzer1.LmaxBeamSearch);
 
+            System.out.println("Euroroad Graph:");
+            analyzer2.runAlgorithmsAndCalculateMetrics();
 
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + analyzer2.calculateVLCC() + "\t" + analyzer2.maxDegreeInLSP_DFS + "\t" +
+                    analyzer2.calculateAverageDegreeLCC() + "\t" + analyzer2.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + analyzer2.calculateVLCC() + "\t" + analyzer2.maxDegreeInLSP_Dijkstra + "\t" +
+                    analyzer2.calculateAverageDegreeLCC() + "\t" + analyzer2.LmaxDijkstra);
+
+            analyzer2.LmaxAStar = analyzer2.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + analyzer2.calculateVLCC() + "\t" + analyzer2.calculateDeltaLCC() + "\t" +
+                    analyzer2.calculateAverageDegreeLCC() + "\t" + analyzer2.LmaxAStar);
+
+            analyzer2.LmaxBeamSearch = analyzer2.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer2.calculateVLCC() + "\t" + analyzer2.calculateDeltaLCC() + "\t" +
+                    analyzer2.calculateAverageDegreeLCC() + "\t" + analyzer2.LmaxBeamSearch);
+            System.out.println("Power Graph:");
+            analyzer3.runAlgorithmsAndCalculateMetrics();
+
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + analyzer3.calculateVLCC() + "\t" + analyzer3.maxDegreeInLSP_DFS + "\t" +
+                    analyzer3.calculateAverageDegreeLCC() + "\t" + analyzer3.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + analyzer3.calculateVLCC() + "\t" + analyzer3.maxDegreeInLSP_Dijkstra + "\t" +
+                    analyzer3.calculateAverageDegreeLCC() + "\t" + analyzer3.LmaxDijkstra);
+
+            analyzer3.LmaxAStar = analyzer3.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + analyzer3.calculateVLCC() + "\t" + analyzer3.calculateDeltaLCC() + "\t" +
+                    analyzer3.calculateAverageDegreeLCC() + "\t" + analyzer3.LmaxAStar);
+
+            analyzer3.LmaxBeamSearch = analyzer3.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer3.calculateVLCC() + "\t" + analyzer3.calculateDeltaLCC() + "\t" +
+                    analyzer3.calculateAverageDegreeLCC() + "\t" + analyzer3.LmaxBeamSearch);
+            System.out.println("Random Graph 1:");
+            analyzer4.runAlgorithmsAndCalculateMetrics();
+
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + analyzer4.calculateVLCC() + "\t" + analyzer4.maxDegreeInLSP_DFS + "\t" +
+                    analyzer4.calculateAverageDegreeLCC() + "\t" + analyzer4.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + analyzer4.calculateVLCC() + "\t" + analyzer4.maxDegreeInLSP_Dijkstra + "\t" +
+                    analyzer4.calculateAverageDegreeLCC() + "\t" + analyzer4.LmaxDijkstra);
+
+            analyzer4.LmaxAStar = analyzer4.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + analyzer4.calculateVLCC() + "\t" + analyzer4.calculateDeltaLCC() + "\t" +
+                    analyzer4.calculateAverageDegreeLCC() + "\t" + analyzer4.LmaxAStar);
+
+            analyzer4.LmaxBeamSearch = analyzer4.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer4.calculateVLCC() + "\t" + analyzer4.calculateDeltaLCC() + "\t" +
+                    analyzer4.calculateAverageDegreeLCC() + "\t" + analyzer4.LmaxBeamSearch);
+            System.out.println("Random Graph 2:");
+            analyzer5.runAlgorithmsAndCalculateMetrics();
+
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + analyzer5.calculateVLCC() + "\t" + analyzer5.maxDegreeInLSP_DFS + "\t" +
+                    analyzer5.calculateAverageDegreeLCC() + "\t" + analyzer5.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + analyzer5.calculateVLCC() + "\t" + analyzer5.maxDegreeInLSP_Dijkstra + "\t" +
+                    analyzer5.calculateAverageDegreeLCC() + "\t" + analyzer5.LmaxDijkstra);
+
+            analyzer5.LmaxAStar = analyzer5.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + analyzer5.calculateVLCC() + "\t" + analyzer5.calculateDeltaLCC() + "\t" +
+                    analyzer5.calculateAverageDegreeLCC() + "\t" + analyzer5.LmaxAStar);
+
+            analyzer5.LmaxBeamSearch = analyzer5.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer5.calculateVLCC() + "\t" + analyzer5.calculateDeltaLCC() + "\t" +
+                    analyzer5.calculateAverageDegreeLCC() + "\t" + analyzer5.LmaxBeamSearch);
+            System.out.println("Random Graph 3:");
+            analyzer6.runAlgorithmsAndCalculateMetrics();
+
+            System.out.println("Algorithm\t|VLCC|\tΔ(LCC)\tk(LCC)\tLmax");
+
+            // DFS
+            // Perform DFS to calculate LmaxDFS and other metrics
+            System.out.println("DFS\t\t" + analyzer6.calculateVLCC() + "\t" + analyzer6.maxDegreeInLSP_DFS + "\t" +
+                    analyzer6.calculateAverageDegreeLCC() + "\t" + analyzer6.LmaxDFS);
+
+            // Dijkstra
+            // Perform Dijkstra to calculate LmaxDijkstra and other metrics
+            System.out.println("Dijkstra\t" + analyzer6.calculateVLCC() + "\t" + analyzer6.maxDegreeInLSP_Dijkstra + "\t" +
+                    analyzer6.calculateAverageDegreeLCC() + "\t" + analyzer6.LmaxDijkstra);
+
+            analyzer6.LmaxAStar = analyzer6.AStarFindLMax();
+            // A*
+            // Perform A* to calculate LmaxAStar and other metrics
+            System.out.println("A*\t\t" + analyzer6.calculateVLCC() + "\t" + analyzer6.calculateDeltaLCC() + "\t" +
+                    analyzer6.calculateAverageDegreeLCC() + "\t" + analyzer6.LmaxAStar);
+
+            analyzer6.LmaxBeamSearch = analyzer6.BeamSearchFindLMax(5,5);
+            //Anytime A*
+            //Perform AnytimeA* to calculate BeamSearchAStar and other metrics
+            System.out.println("BeamSearchAStar\t\t" + analyzer6.calculateVLCC() + "\t" + analyzer6.calculateDeltaLCC() + "\t" +
+                    analyzer6.calculateAverageDegreeLCC() + "\t" + analyzer6.LmaxBeamSearch);
         } catch (IOException e) {
             System.err.println("Error reading the graph file: " + e.getMessage());
         }
