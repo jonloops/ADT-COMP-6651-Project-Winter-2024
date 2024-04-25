@@ -285,10 +285,8 @@ public class GraphAnalyzer {
         return end.currentPathToNode.size();
     }
 
-    public double BeamSearchFindLMax(int initialBeamWidth, double beamWidthIncrement) {
+    public double BeamSearchFindLMax(int initialBeamWidth, int beamWidthIncrement) {
         List<Vertex> LCC = getLargestComponent();
-
-        // Find the end vertex (destination)
         Vertex end = null;
         double maxDistance = -1.0;
         for (int i = 0; i < LCC.size(); i++) {
@@ -300,58 +298,43 @@ public class GraphAnalyzer {
                 }
             }
         }
-
-        // Initialize beam search with vertices with highest distance to destination
         int beamWidth = initialBeamWidth;
-        Set<Vertex> visited = new HashSet<>();
         Queue<Vertex> queue = new PriorityQueue<>(Comparator.comparingDouble((Vertex o) ->
                 o.highestCostToNode + o.distanceToDestination).reversed());
-
-        for (int i = 0; i < beamWidth && i < LCC.size(); i++) {
+        Set<Vertex> visited = new HashSet<>();
+        for (int i = 0; i < Math.min(beamWidth, LCC.size()); i++) {
             Vertex startVertex = LCC.get(i);
-            startVertex.highestCostToNode = 0.0; // Start vertex has cost 0
-            startVertex.currentPathToNode = new ArrayList<>(); // Initialize path
-            startVertex.distanceToDestination = getDistance(startVertex, end); // Heuristic
+            startVertex.highestCostToNode = 0.0;
+            startVertex.currentPathToNode = new ArrayList<>();
+            startVertex.distanceToDestination = getDistance(startVertex, end);
             queue.add(startVertex);
         }
 
-        double maxPathLength = 0.0;
+        double maxPathLength = 0;
         while (!queue.isEmpty()) {
             Vertex currentVertex = queue.poll();
+            if (visited.contains(currentVertex)) continue;
             visited.add(currentVertex);
 
-            if (currentVertex.currentPathToNode.size() > maxPathLength) {
-                maxPathLength = currentVertex.currentPathToNode.size();
-            }
+            maxPathLength = Math.max(maxPathLength, currentVertex.currentPathToNode.size()+1);
 
-            // Explore neighbors of current vertex
             for (Vertex neighbor : currentVertex.neighbors) {
-                if (!visited.contains(neighbor) && !currentVertex.currentPathToNode.contains(neighbor)) {
-                    neighbor.currentPathToNode = new ArrayList<>(currentVertex.currentPathToNode);
-                    neighbor.currentPathToNode.add(currentVertex);
-                    neighbor.highestCostToNode = currentVertex.highestCostToNode + 1; // Increment cost
-                    neighbor.distanceToDestination = getDistance(neighbor, end); // Update heuristic
-                    queue.add(neighbor);
-                }
-            }
-
-            // Increase beam width dynamically
-            if (queue.isEmpty()) {
-                beamWidth += beamWidthIncrement;
-                for (int i = 0; i < beamWidth && i < LCC.size(); i++) {
-                    Vertex startVertex = LCC.get(i);
-                    if (!visited.contains(startVertex)) {
-                        startVertex.highestCostToNode = 0.0; // Start vertex has cost 0
-                        startVertex.currentPathToNode = new ArrayList<>(); // Initialize path
-                        startVertex.distanceToDestination = getDistance(startVertex, end); // Heuristic
-                        queue.add(startVertex);
+                if (!visited.contains(neighbor)) {
+                    if(queue.size()<beamWidth) {
+                        neighbor.highestCostToNode = currentVertex.highestCostToNode + getDistance(currentVertex, neighbor);
+                        neighbor.currentPathToNode = new ArrayList<>(currentVertex.currentPathToNode);
+                        neighbor.currentPathToNode.add(currentVertex);
+                        neighbor.distanceToDestination = getDistance(neighbor, end);
+                        queue.remove(neighbor); // Remove old version if present
+                        queue.add(neighbor);   // Add updated version
                     }
                 }
             }
+            beamWidth = beamWidth+beamWidthIncrement;
         }
-
         return maxPathLength;
     }
+
 
     public static void main(String[] args) {
         try {
